@@ -1,0 +1,39 @@
+# vtm-next
+
+`vtm-next` is a planned Next.js rebuild of VTM, the intentionally vulnerable task manager used for security training.
+
+The goal is functional parity with the Django VTM training app while using a current Next.js app-router architecture, a different visual design, and an explicit vulnerability map so training surfaces are deliberate rather than accidental.
+
+## Target Stack
+
+- Next.js `16.2.6`
+- React `19.2.6`
+- TypeScript
+- SQLite via `better-sqlite3`
+- Next.js App Router with server components, route handlers, and server actions
+- OpenAI-compatible chatbot tooling
+- Plain CSS modules/global CSS for a distinct dark-sidebar, high-contrast operational UI
+
+## Training Intent
+
+This app is intentionally vulnerable. Do not harden the vulnerabilities listed in `docs/vulnerability-map.md` unless a task explicitly asks for a mitigation exercise.
+
+## Initial Commands
+
+```sh
+npm install
+npm run dev
+```
+
+## Repository Status
+
+This is a starter repository scaffold. The current files establish:
+
+- architecture plan
+- vulnerability map
+- seed-data shape
+- starter Next.js pages
+- basic route layout
+- initial styling direction
+
+Implementation should proceed from `docs/implementation-plan.md`.
