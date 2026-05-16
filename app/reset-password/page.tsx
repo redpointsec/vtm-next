@@ -17,15 +17,15 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
         <form className="form-grid" action="/api/auth/reset-password" method="post">
           <div className="field">
             <label htmlFor="email">Email</label>
-            <input id="email" name="email" defaultValue={params?.email || "chris@tm.com"} />
+            <input id="email" name="email" defaultValue={params?.email || ""} placeholder="user@example.com" />
           </div>
           <div className="field">
             <label htmlFor="token">Reset token</label>
-            <input id="token" name="token" defaultValue={params?.token || "chris-reset-token"} />
+            <input id="token" name="token" defaultValue={params?.token || ""} placeholder="Reset token" />
           </div>
           <div className="field">
             <label htmlFor="password">New password</label>
-            <input id="password" name="password" type="password" defaultValue="test123" />
+            <input id="password" name="password" type="password" placeholder="New password" />
           </div>
           {params?.changed ? <p className="form-success">Password updated.</p> : null}
           {params?.error ? <p className="form-error">Reset failed.</p> : null}

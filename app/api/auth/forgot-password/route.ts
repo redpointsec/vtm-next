@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
   }
 
   const resetUrl = new URL("/reset-password", request.url);
-  resetUrl.searchParams.set("email", reset.email || email);
   resetUrl.searchParams.set("token", reset.reset_token);
 
   return NextResponse.redirect(resetUrl);
