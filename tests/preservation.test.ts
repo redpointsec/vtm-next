@@ -34,6 +34,7 @@ test("route policy keeps auth bare and selected training pages public", () => {
   assert.equal(isPublicRoute("/dashboard"), true);
   assert.equal(isPublicRoute("/debug"), true);
   assert.equal(isPublicRoute("/api/docs"), true);
+  assert.equal(isPublicRoute("/"), false);
   assert.equal(isPublicRoute("/projects"), false);
   assert.equal(isPublicRoute("/api/users"), false);
 });

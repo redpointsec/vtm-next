@@ -8,7 +8,7 @@ export const PUBLIC_ROUTE_PREFIXES = [
   "/api/health",
 ];
 
-export const PUBLIC_EXACT_ROUTES = ["/", "/dashboard", "/debug", "/docs", "/api"];
+export const PUBLIC_EXACT_ROUTES = ["/dashboard", "/debug", "/docs", "/api"];
 
 export function normalizePathname(pathname: string) {
   if (pathname.length > 1 && pathname.endsWith("/")) {
