@@ -12,6 +12,7 @@ const { getDb, seedDatabase } = await import("../lib/db.ts");
 const { authenticateWeakUser, createWeakSessionToken, verifyWeakSessionToken } = await import("../lib/auth.ts");
 const { getUsersApiData, getTasksApiData } = await import("../lib/api-data.ts");
 const { getUsersForAssistant, respondToAssistantMessage } = await import("../lib/chatbot-tools.ts");
+const { isAuthRoute, isPublicRoute } = await import("../lib/route-policy.ts");
 const { unsafeGlobalSearch, runPingUnsafe } = await import("../lib/training-tools.ts");
 
 seedDatabase();
@@ -26,6 +27,15 @@ test("seed data keeps weak training accounts available", () => {
 
   assert.equal(chris?.username, "chris");
   assert.equal(chris?.id, 2);
+});
+
+test("route policy keeps auth bare and selected training pages public", () => {
+  assert.equal(isAuthRoute("/login"), true);
+  assert.equal(isPublicRoute("/dashboard"), true);
+  assert.equal(isPublicRoute("/debug"), true);
+  assert.equal(isPublicRoute("/api/docs"), true);
+  assert.equal(isPublicRoute("/projects"), false);
+  assert.equal(isPublicRoute("/api/users"), false);
 });
 
 test("weak session tokens remain long lived and signed with default secret", async () => {

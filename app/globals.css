@@ -55,6 +55,13 @@ select {
   min-height: 100vh;
 }
 
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  padding: 24px;
+  place-items: center;
+}
+
 .sidebar {
   background: var(--rail);
   color: var(--rail-text);
@@ -271,6 +278,10 @@ select {
 
 .auth-card {
   max-width: 620px;
+}
+
+.compact-auth-card {
+  width: min(100%, 460px);
 }
 
 .profile-grid {
