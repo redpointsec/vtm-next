@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
 import { getDb, initializeSchema } from "@/lib/db";
 import { seedUsers } from "@/lib/seed-data";
 
@@ -69,6 +70,27 @@ export async function verifyWeakSessionToken(token: string) {
   return jwtVerify(token, encodedWeakSecret());
 }
 
+export async function getCurrentTrainingUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const { payload } = await verifyWeakSessionToken(token);
+    return {
+      id: Number(payload.sub),
+      username: String(payload.username || ""),
+      email: typeof payload.email === "string" ? payload.email : null,
+      role: typeof payload.role === "string" ? payload.role : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function findTrainingUser(username: string): DbUser | null {
   initializeSchema();
 
@@ -129,4 +151,67 @@ export function weakRedirectUrl(target: string | null, requestUrl: string, fallb
   } catch {
     return new URL(destination, requestUrl);
   }
+}
+
+export function createWeakUser(input: {
+  username: string;
+  password: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatar: string;
+  dob: string;
+  ssn: string;
+}) {
+  initializeSchema();
+  const database = getDb();
+  const nextUser = database.prepare("select coalesce(max(id), 0) + 1 as id from users").get() as {
+    id: number;
+  };
+  const resetToken = `${input.username}-reset-token`;
+  const passwordHash = `md5$${input.password}$${weakHashPassword(input.password)}`;
+
+  database.transaction(() => {
+    database
+      .prepare(
+        `insert into users (
+          id, username, password_hash, email, is_staff, is_superuser, date_joined
+        ) values (?, ?, ?, ?, 0, 0, current_timestamp)`,
+      )
+      .run(nextUser.id, input.username, passwordHash, input.email);
+
+    database
+      .prepare("insert into user_groups (user_id, group_id) values (?, 3)")
+      .run(nextUser.id);
+
+    database
+      .prepare(
+        `insert into profiles (
+          id, user_id, first_name, last_name, email, avatar, dob, ssn,
+          reset_token, reset_token_expires
+        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        nextUser.id,
+        nextUser.id,
+        input.firstName,
+        input.lastName,
+        input.email,
+        input.avatar,
+        input.dob,
+        input.ssn,
+        resetToken,
+        "2035-01-01T00:00:00.000Z",
+      );
+  })();
+
+  return findTrainingUser(input.username);
+}
+
+export function updateWeakPassword(userId: number, password: string) {
+  initializeSchema();
+  const database = getDb();
+  const passwordHash = `md5$${password}$${weakHashPassword(password)}`;
+
+  database.prepare("update users set password_hash = ? where id = ?").run(passwordHash, userId);
 }

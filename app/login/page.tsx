@@ -27,6 +27,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <button className="button" type="submit">
             Sign in
           </button>
+          <div className="form-links">
+            <a href="/register">Register</a>
+            <a href="/forgot-password">Forgot password</a>
+          </div>
         </form>
       </div>
     </section>

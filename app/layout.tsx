@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getCurrentTrainingUser } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,13 +13,17 @@ const navItems = [
   ["Projects", "/projects"],
   ["Tasks", "/tasks"],
   ["AI Assistant", "/chat"],
+  ["Register", "/register"],
+  ["Forgot Password", "/forgot-password"],
 ];
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const currentUser = await getCurrentTrainingUser();
+
   return (
     <html lang="en">
       <body>
@@ -40,9 +45,14 @@ export default function RootLayout({
               <form className="top-search" action="/dashboard">
                 <input name="q" placeholder="Search training data" />
               </form>
-              <Link className="user-chip" href="/login">
-                chris
-              </Link>
+              <div className="top-actions">
+                <Link className="user-chip" href={`/profile/${currentUser?.id || 2}`}>
+                  {currentUser?.username || "chris"}
+                </Link>
+                <Link className="button secondary compact" href="/api/auth/logout?redirect=/login">
+                  Logout
+                </Link>
+              </div>
             </header>
             <section className="content">{children}</section>
           </main>
