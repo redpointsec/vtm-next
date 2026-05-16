@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getProjectsApiData } from "@/lib/api-data";
 import { saveProject } from "@/lib/crud";
 
 function parseIds(value: FormDataEntryValue | null) {
@@ -23,4 +24,10 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.redirect(new URL(`/projects?edit=${projectId}&saved=1`, request.url));
+}
+
+export function GET() {
+  return NextResponse.json({
+    results: getProjectsApiData(),
+  });
 }

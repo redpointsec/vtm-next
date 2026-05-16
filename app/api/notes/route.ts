@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getNotesApiData } from "@/lib/api-data";
 import { saveNote } from "@/lib/crud";
 
 export async function POST(request: NextRequest) {
@@ -15,4 +16,10 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.redirect(new URL(`/tasks?note=${noteId}&saved=1`, request.url));
+}
+
+export function GET(request: NextRequest) {
+  return NextResponse.json({
+    results: getNotesApiData(request.nextUrl.searchParams.get("taskId")),
+  });
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getChatApiData } from "@/lib/api-data";
 import {
   appendChatMessage,
   createChatSession,
@@ -46,5 +47,6 @@ export async function GET() {
       "add_note",
       "update_note",
     ],
+    data: getChatApiData(),
   });
 }

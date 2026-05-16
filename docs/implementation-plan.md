@@ -104,12 +104,12 @@ Use a different visual design from Django VTM:
 
 ## Build Phases
 
-1. Core layout and seed data.
-2. Auth flows with intentional weak token/session behavior.
-3. Projects/tasks/notes/files CRUD.
-4. Search/debug/ping training utilities.
-5. Chatbot UI and tools.
-6. API routes and docs.
+1. Core layout and seed data. Implemented in `ba6fc01`.
+2. Auth flows with intentional weak token/session behavior. Implemented in `dc7304a`.
+3. Projects/tasks/notes/files CRUD. Implemented in `d9eba53`.
+4. Search/debug/ping training utilities. Implemented in `85eb65a`.
+5. Chatbot UI and tools. Implemented in `393c11a`.
+6. API routes and docs. Implemented in this phase.
 7. Preservation tests for each intentional vulnerability.
 
 ## Guardrails

@@ -15,6 +15,7 @@ const navItems = [
   ["Search", "/search"],
   ["Ping", "/ping"],
   ["Debug", "/debug"],
+  ["API Docs", "/docs"],
   ["AI Assistant", "/chat"],
   ["Register", "/register"],
   ["Forgot Password", "/forgot-password"],

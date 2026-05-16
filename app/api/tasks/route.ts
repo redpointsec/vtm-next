@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getTasksApiData } from "@/lib/api-data";
 import { saveTask } from "@/lib/crud";
 
 function parseIds(value: FormDataEntryValue | null) {
@@ -26,4 +27,10 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.redirect(new URL(`/tasks?edit=${taskId}&saved=1`, request.url));
+}
+
+export function GET(request: NextRequest) {
+  return NextResponse.json({
+    results: getTasksApiData(request.nextUrl.searchParams.get("projectId")),
+  });
 }
