@@ -1,4 +1,14 @@
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams?: Promise<{
+    next?: string;
+    error?: string;
+  }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const next = params?.next || "/dashboard";
+
   return (
     <section className="card" style={{ maxWidth: 460 }}>
       <div className="card-header">Login</div>
@@ -12,7 +22,8 @@ export default function LoginPage() {
             <label htmlFor="password">Password</label>
             <input id="password" name="password" type="password" defaultValue="test123" />
           </div>
-          <input name="next" type="hidden" defaultValue="/dashboard" />
+          {params?.error ? <p className="form-error">Invalid username or password.</p> : null}
+          <input name="next" type="hidden" defaultValue={next} />
           <button className="button" type="submit">
             Sign in
           </button>

@@ -2,11 +2,13 @@
   "name": "vtm-next",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "A Next.js rebuild of VTM for intentional vulnerability training.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "seed": "node scripts/seed.ts",
     "lint": "eslint"
   },
   "dependencies": {

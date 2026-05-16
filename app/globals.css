@@ -192,6 +192,11 @@ select {
   border-bottom: 1px solid var(--line);
 }
 
+.table .empty-cell {
+  color: var(--muted);
+  text-align: center;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

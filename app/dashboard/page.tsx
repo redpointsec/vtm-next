@@ -1,36 +1,19 @@
 import Link from "next/link";
+import { getDashboardData } from "@/lib/queries";
 import { vulnerabilityHighlights } from "@/lib/vulnerabilities";
 
-const projects = [
-  {
-    id: 7,
-    title: "Marketing Campaign",
-    due: "2026-06-01",
-    progress: 42,
-    members: "chris, ken",
-  },
-  {
-    id: 9,
-    title: "iOS App Development",
-    due: "2026-06-12",
-    progress: 18,
-    members: "pm",
-  },
-];
-
-const tasks = [
-  ["Advertising", "Marketing Campaign", "Open"],
-  ["Record radio commercial", "Marketing Campaign", "Open"],
-  ["Build onboarding screen", "iOS App Development", "Done"],
-];
+export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
+  const trainingUsername = process.env.VTM_NEXT_TRAINING_USER || "chris";
+  const { username, projects, tasks } = getDashboardData(trainingUsername);
+
   return (
     <>
       <div className="page-header">
         <div>
           <h1>Dashboard</h1>
-          <p>Operational view for intentionally vulnerable task workflows.</p>
+          <p>Operational view for {username}&apos;s intentionally vulnerable task workflows.</p>
         </div>
         <Link className="button" href="/projects">
           New project
@@ -51,16 +34,24 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => (
-                  <tr key={project.id}>
-                    <td>
-                      <Link href={`/projects?id=${project.id}`}>{project.title}</Link>
+                {projects.length > 0 ? (
+                  projects.map((project) => (
+                    <tr key={project.id}>
+                      <td>
+                        <Link href={`/projects?id=${project.id}`}>{project.title}</Link>
+                      </td>
+                      <td>{project.due ?? "Unscheduled"}</td>
+                      <td>{project.progress}%</td>
+                      <td>{project.members || "Unassigned"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="empty-cell" colSpan={4}>
+                      No assigned projects found. Seed the SQLite database to populate this view.
                     </td>
-                    <td>{project.due}</td>
-                    <td>{project.progress}%</td>
-                    <td>{project.members}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -78,15 +69,25 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {tasks.map(([task, project, status]) => (
-                  <tr key={`${project}-${task}`}>
-                    <td>{task}</td>
-                    <td>{project}</td>
-                    <td>
-                      <span className="badge">{status}</span>
+                {tasks.length > 0 ? (
+                  tasks.map((task) => (
+                    <tr key={task.id}>
+                      <td>{task.title}</td>
+                      <td>
+                        <Link href={`/projects?id=${task.projectId}`}>{task.projectTitle}</Link>
+                      </td>
+                      <td>
+                        <span className="badge">{task.status}</span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="empty-cell" colSpan={3}>
+                      No assigned tasks found. Seed the SQLite database to populate this view.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
