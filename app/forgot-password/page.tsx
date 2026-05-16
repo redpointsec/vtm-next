@@ -14,7 +14,7 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
         <form className="form-grid" action="/api/auth/forgot-password" method="post">
           <div className="field">
             <label htmlFor="email">Email</label>
-            <input id="email" name="email" defaultValue="chris@tm.com" />
+            <input id="email" name="email" placeholder="user@example.com" />
           </div>
           {params?.error ? <p className="form-error">No reset token was found.</p> : null}
           <button className="button" type="submit">
