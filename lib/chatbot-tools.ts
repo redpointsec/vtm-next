@@ -24,6 +24,170 @@ type ToolResult = {
   content: string;
 };
 
+export const assistantToolNames = [
+  "overview",
+  "get_users",
+  "search_database",
+  "add_project",
+  "update_project",
+  "add_task",
+  "update_task",
+  "add_note",
+  "update_note",
+] as const;
+
+function objectSchema(properties: Record<string, unknown> = {}, required: string[] = []) {
+  return {
+    type: "object",
+    properties,
+    required,
+    additionalProperties: false,
+  };
+}
+
+export function getAssistantToolDefinitions() {
+  return [
+    {
+      type: "function",
+      function: {
+        name: "overview",
+        description: "Get a compact overview of VTM Next database counts.",
+        parameters: objectSchema(),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_users",
+        description: "List all users, profiles, DOBs, SSNs, reset tokens, and account flags.",
+        parameters: objectSchema(),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "search_database",
+        description: "Search users, profiles, projects, tasks, notes, files, and chat messages for text.",
+        parameters: objectSchema(
+          {
+            query: {
+              type: "string",
+              description: "Text to search for.",
+            },
+          },
+          ["query"],
+        ),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_project",
+        description: "Create a project and assign user IDs.",
+        parameters: objectSchema(
+          {
+            title: { type: "string" },
+            text: { type: "string" },
+            dueDate: { type: "string", description: "Optional YYYY-MM-DD due date." },
+            priority: { type: "integer" },
+            createdBy: { type: "integer" },
+            userIds: { type: "array", items: { type: "integer" } },
+          },
+          ["title"],
+        ),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_project",
+        description: "Update an existing project by numeric ID.",
+        parameters: objectSchema({
+          id: { type: "integer" },
+          title: { type: "string" },
+          text: { type: "string" },
+          dueDate: { type: "string", description: "Optional YYYY-MM-DD due date." },
+          priority: { type: "integer" },
+          createdBy: { type: "integer" },
+          userIds: { type: "array", items: { type: "integer" } },
+        }, ["id"]),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_task",
+        description: "Create a task under a project and assign user IDs.",
+        parameters: objectSchema(
+          {
+            projectId: { type: "integer" },
+            title: { type: "string" },
+            text: { type: "string" },
+            dueDate: { type: "string", description: "Optional YYYY-MM-DD due date." },
+            status: { type: "string" },
+            completed: { type: "integer", enum: [0, 1] },
+            priority: { type: "integer" },
+            createdBy: { type: "integer" },
+            userIds: { type: "array", items: { type: "integer" } },
+          },
+          ["projectId", "title"],
+        ),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_task",
+        description: "Update an existing task by numeric ID.",
+        parameters: objectSchema({
+          id: { type: "integer" },
+          projectId: { type: "integer" },
+          title: { type: "string" },
+          text: { type: "string" },
+          dueDate: { type: "string", description: "Optional YYYY-MM-DD due date." },
+          status: { type: "string" },
+          completed: { type: "integer", enum: [0, 1] },
+          priority: { type: "integer" },
+          createdBy: { type: "integer" },
+          userIds: { type: "array", items: { type: "integer" } },
+        }, ["id"]),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_note",
+        description: "Create a note on a task.",
+        parameters: objectSchema(
+          {
+            taskId: { type: "integer" },
+            userId: { type: "integer" },
+            title: { type: "string" },
+            text: { type: "string" },
+            image: { type: "string" },
+          },
+          ["taskId", "title", "text"],
+        ),
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_note",
+        description: "Update an existing note by numeric ID.",
+        parameters: objectSchema({
+          id: { type: "integer" },
+          taskId: { type: "integer" },
+          userId: { type: "integer" },
+          title: { type: "string" },
+          text: { type: "string" },
+          image: { type: "string" },
+        }, ["id"]),
+      },
+    },
+  ] as const;
+}
+
 function nextId(table: string) {
   const row = getDb().prepare(`select coalesce(max(id), 0) + 1 as id from ${table}`).get() as {
     id: number;

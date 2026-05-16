@@ -18,6 +18,16 @@ The goal is functional parity with the Django VTM training app while using a cur
 
 This app is intentionally vulnerable. Do not harden the vulnerabilities listed in `docs/vulnerability-map.md` unless a task explicitly asks for a mitigation exercise.
 
+## Chatbot Configuration
+
+The assistant uses the same OpenAI-compatible OpenRouter settings as Django VTM:
+
+```sh
+OPENAI_API_KEY=...
+OPENAI_MODEL=openai/gpt-oss-120b:free
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+```
+
 ## Initial Commands
 
 ```sh
