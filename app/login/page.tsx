@@ -8,6 +8,12 @@ type LoginPageProps = {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const next = params?.next || "/dashboard";
+  const errorMessage =
+    params?.error === "username_not_found"
+      ? "Username not found."
+      : params?.error
+        ? "Invalid username or password."
+        : "";
 
   return (
     <section className="card auth-card compact-auth-card">
@@ -22,7 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <label htmlFor="password">Password</label>
             <input id="password" name="password" type="password" autoComplete="current-password" />
           </div>
-          {params?.error ? <p className="form-error">Invalid username or password.</p> : null}
+          {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
           <input name="next" type="hidden" defaultValue={next} />
           <button className="button" type="submit">
             Sign in

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   AUTH_COOKIE_NAME,
   WEAK_TOKEN_MAX_AGE_SECONDS,
-  authenticateWeakUser,
+  checkWeakPassword,
   createWeakSessionToken,
+  findTrainingUser,
   weakRedirectUrl,
 } from "@/lib/auth";
 
@@ -13,9 +14,9 @@ export async function POST(request: NextRequest) {
   const password = String(formData.get("password") || "");
   const next = String(formData.get("next") || request.nextUrl.searchParams.get("next") || "");
 
-  const user = authenticateWeakUser(username, password);
+  const user = findTrainingUser(username);
 
-  if (!user) {
+  if (!user || !checkWeakPassword(password, user.password_hash)) {
     // Intentional vulnerability: failed logins expose submitted credentials in logs.
     console.warn(`VTM weak auth failed username=${username} password=${password}`);
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (next) {
       loginUrl.searchParams.set("next", next);
     }
-    loginUrl.searchParams.set("error", "1");
+    loginUrl.searchParams.set("error", user ? "invalid_password" : "username_not_found");
     return NextResponse.redirect(loginUrl);
   }
 
