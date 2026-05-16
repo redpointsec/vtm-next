@@ -23,6 +23,7 @@ This app is intentionally vulnerable. Do not harden the vulnerabilities listed i
 ```sh
 npm install
 npm run lint
+npm test
 npm run build
 npm run dev
 ```

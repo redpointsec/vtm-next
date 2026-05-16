@@ -1,8 +1,7 @@
 import crypto from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
-import { getDb, initializeSchema } from "@/lib/db";
-import { seedUsers } from "@/lib/seed-data";
+import { getDb, initializeSchema } from "./db.ts";
+import { seedUsers } from "./seed-data.ts";
 
 export const AUTH_COOKIE_NAME = "vtm_session";
 export const WEAK_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
@@ -71,6 +70,7 @@ export async function verifyWeakSessionToken(token: string) {
 }
 
 export async function getCurrentTrainingUser() {
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
 

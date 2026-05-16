@@ -109,8 +109,8 @@ Use a different visual design from Django VTM:
 3. Projects/tasks/notes/files CRUD. Implemented in `d9eba53`.
 4. Search/debug/ping training utilities. Implemented in `85eb65a`.
 5. Chatbot UI and tools. Implemented in `393c11a`.
-6. API routes and docs. Implemented in this phase.
-7. Preservation tests for each intentional vulnerability.
+6. API routes and docs. Implemented in `cc321ab`.
+7. Preservation tests for each intentional vulnerability. Implemented in this phase.
 
 ## Guardrails
 
