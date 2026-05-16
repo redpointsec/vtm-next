@@ -12,6 +12,9 @@ const navItems = [
   ["Dashboard", "/dashboard"],
   ["Projects", "/projects"],
   ["Tasks", "/tasks"],
+  ["Search", "/search"],
+  ["Ping", "/ping"],
+  ["Debug", "/debug"],
   ["AI Assistant", "/chat"],
   ["Register", "/register"],
   ["Forgot Password", "/forgot-password"],
@@ -42,7 +45,7 @@ export default async function RootLayout({
           </aside>
           <main className="main-panel">
             <header className="topbar">
-              <form className="top-search" action="/dashboard">
+              <form className="top-search" action="/search">
                 <input name="q" placeholder="Search training data" />
               </form>
               <div className="top-actions">
