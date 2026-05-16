@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProjectsApiData } from "@/lib/api-data";
-import { saveProject } from "@/lib/crud";
+import { getCurrentTrainingUser } from "@/lib/auth";
+import { listProjects, saveProject } from "@/lib/crud";
+import { canManageProject, canManageProjects, isAdmin } from "@/lib/permissions";
 
 function parseIds(value: FormDataEntryValue | null) {
   return String(value || "")
@@ -10,8 +11,16 @@ function parseIds(value: FormDataEntryValue | null) {
 }
 
 export async function POST(request: NextRequest) {
+  const currentUser = await getCurrentTrainingUser();
+  if (!currentUser || !canManageProjects(currentUser)) {
+    return NextResponse.redirect(new URL("/login?next=/projects", request.url));
+  }
+
   const formData = await request.formData();
   const id = Number(formData.get("id") || 0);
+  if (id > 0 && !canManageProject(currentUser, id)) {
+    return NextResponse.redirect(new URL("/projects?error=forbidden", request.url));
+  }
 
   const projectId = saveProject({
     id,
@@ -19,15 +28,20 @@ export async function POST(request: NextRequest) {
     text: String(formData.get("text") || ""),
     priority: Number(formData.get("priority") || 1),
     dueDate: String(formData.get("dueDate") || ""),
-    createdBy: Number(formData.get("createdBy") || 2),
+    createdBy: isAdmin(currentUser) ? Number(formData.get("createdBy") || currentUser.id) : currentUser.id,
     userIds: parseIds(formData.get("userIds")),
   });
 
   return NextResponse.redirect(new URL(`/projects?edit=${projectId}&saved=1`, request.url));
 }
 
-export function GET() {
+export async function GET() {
+  const currentUser = await getCurrentTrainingUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   return NextResponse.json({
-    results: getProjectsApiData(),
+    results: listProjects(currentUser),
   });
 }

@@ -1,4 +1,7 @@
+import { redirect } from "next/navigation";
+import { getCurrentTrainingUser } from "@/lib/auth";
 import { listFiles, listNotes, listProjects, listTasks, listUsers } from "@/lib/crud";
+import { canManageProjects, canManageTask } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,25 +17,33 @@ type TasksPageProps = {
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
   const params = await searchParams;
-  const projects = listProjects();
-  const tasks = listTasks();
-  const notes = listNotes();
-  const files = listFiles();
+  const currentUser = await getCurrentTrainingUser();
+
+  if (!currentUser) {
+    redirect("/login?next=/tasks");
+  }
+
+  const projects = listProjects(currentUser);
+  const tasks = listTasks(currentUser);
+  const notes = listNotes(undefined, currentUser);
+  const files = listFiles(currentUser);
   const users = listUsers();
   const editingTask = tasks.find((task) => task.id === Number(params?.edit));
   const editingNote = notes.find((note) => note.id === Number(params?.note));
   const defaultTaskId = editingTask?.id || tasks.at(0)?.id || 101;
+  const canManage = canManageProjects(currentUser);
 
   return (
     <>
       <div className="page-header">
         <div>
-          <h1>Tasks</h1>
-          <p>Manage tasks, notes, and uploaded training files.</p>
+          <h1>{canManage ? "Tasks" : "My Tasks"}</h1>
+          <p>{canManage ? "Manage tasks, notes, and uploaded training files." : "Review assigned tasks and add notes."}</p>
         </div>
       </div>
 
       <div className="grid two">
+        {canManage ? (
         <section className="card">
           <div className="card-header">{editingTask ? `Edit Task #${editingTask.id}` : "New Task"}</div>
           <div className="card-body">
@@ -86,11 +97,8 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                   name="userIds"
                   defaultValue={
                     editingTask
-                      ? users
-                          .filter((user) => editingTask.assignees?.split(",").includes(user.username))
-                          .map((user) => user.id)
-                          .join(",")
-                      : "2"
+                      ? editingTask.user_ids || ""
+                      : String(currentUser.id)
                   }
                 />
               </div>
@@ -102,6 +110,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             </form>
           </div>
         </section>
+        ) : null}
 
         <section className="card">
           <div className="card-header">{editingNote ? `Edit Note #${editingNote.id}` : "New Note"}</div>
@@ -132,7 +141,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
               </div>
               <div className="field">
                 <label htmlFor="userId">Author user ID</label>
-                <input id="userId" name="userId" type="number" defaultValue={editingNote?.user_id || 2} />
+                <input id="userId" name="userId" type="number" defaultValue={editingNote?.user_id || currentUser.id} />
               </div>
               <button className="button" type="submit">
                 Save note
@@ -165,21 +174,25 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                   <td>{task.assignees || "none"}</td>
                   <td>{task.completed ? "Done" : task.status}</td>
                   <td className="row-actions">
-                    <a className="button secondary compact" href={`/tasks?edit=${task.id}`}>
-                      Edit
-                    </a>
+                    {canManageTask(currentUser, task.id) ? (
+                      <a className="button secondary compact" href={`/tasks?edit=${task.id}`}>
+                        Edit
+                      </a>
+                    ) : null}
                     <form action="/api/tasks/toggle" method="post">
                       <input name="id" type="hidden" value={task.id} />
                       <button className="button secondary compact" type="submit">
                         Toggle
                       </button>
                     </form>
-                    <form action="/api/tasks/delete" method="post">
-                      <input name="id" type="hidden" value={task.id} />
-                      <button className="button secondary compact" type="submit">
-                        Delete
-                      </button>
-                    </form>
+                    {canManageTask(currentUser, task.id) ? (
+                      <form action="/api/tasks/delete" method="post">
+                        <input name="id" type="hidden" value={task.id} />
+                        <button className="button secondary compact" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -213,12 +226,14 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                       <a className="button secondary compact" href={`/tasks?note=${note.id}`}>
                         Edit
                       </a>
-                      <form action="/api/notes/delete" method="post">
-                        <input name="id" type="hidden" value={note.id} />
-                        <button className="button secondary compact" type="submit">
-                          Delete
-                        </button>
-                      </form>
+                      {canManage || note.user_id === currentUser.id ? (
+                        <form action="/api/notes/delete" method="post">
+                          <input name="id" type="hidden" value={note.id} />
+                          <button className="button secondary compact" type="submit">
+                            Delete
+                          </button>
+                        </form>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -227,6 +242,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
           </div>
         </section>
 
+        {canManage ? (
         <section className="card">
           <div className="card-header">Files</div>
           <div className="card-body">
@@ -288,6 +304,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             </div>
           </div>
         </section>
+        ) : null}
       </div>
     </>
   );

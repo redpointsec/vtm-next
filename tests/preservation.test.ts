@@ -9,9 +9,17 @@ process.env.VTM_NEXT_DB_PATH = dbPath;
 process.env.VTM_NEXT_AUTH_SECRET = "";
 
 const { getDb, seedDatabase } = await import("../lib/db.ts");
-const { authenticateWeakUser, createWeakSessionToken, verifyWeakSessionToken } = await import("../lib/auth.ts");
+const {
+  authenticateWeakUser,
+  createWeakSessionToken,
+  findTrainingUser,
+  verifyWeakSessionToken,
+} = await import("../lib/auth.ts");
 const { getUsersApiData, getTasksApiData } = await import("../lib/api-data.ts");
 const { getUsersForAssistant, respondToAssistantMessage } = await import("../lib/chatbot-tools.ts");
+const { listProjects, listTasks } = await import("../lib/crud.ts");
+const { canManageProject } = await import("../lib/permissions.ts");
+const { getDashboardData } = await import("../lib/queries.ts");
 const { isAuthRoute, isPublicRoute } = await import("../lib/route-policy.ts");
 const { unsafeGlobalSearch, runPingUnsafe } = await import("../lib/training-tools.ts");
 
@@ -27,6 +35,60 @@ test("seed data keeps weak training accounts available", () => {
 
   assert.equal(chris?.username, "chris");
   assert.equal(chris?.id, 2);
+});
+
+test("roles resolve from group membership", () => {
+  assert.equal(findTrainingUser("admin")?.role, "admin");
+  assert.equal(findTrainingUser("pm")?.role, "project_manager");
+  assert.equal(findTrainingUser("chris")?.role, "team_member");
+});
+
+test("project and task visibility follows admin, PM, and assigned-user scopes", () => {
+  const admin = findTrainingUser("admin");
+  const pm = findTrainingUser("pm");
+  const chris = findTrainingUser("chris");
+
+  assert.ok(admin);
+  assert.ok(pm);
+  assert.ok(chris);
+  assert.equal(listProjects(admin).length, 3);
+  assert.deepEqual(
+    listProjects(pm).map((project) => project.id).sort((a, b) => a - b),
+    [7, 9],
+  );
+  assert.deepEqual(
+    listProjects(chris).map((project) => project.id).sort((a, b) => a - b),
+    [7, 9],
+  );
+  assert.deepEqual(
+    listTasks(chris).map((task) => task.id).sort((a, b) => a - b),
+    [101, 102, 202],
+  );
+});
+
+test("PM can manage only projects they manage", () => {
+  const pm = findTrainingUser("pm");
+
+  assert.ok(pm);
+  assert.equal(canManageProject(pm, 7), true);
+  assert.equal(canManageProject(pm, 9), true);
+  assert.equal(canManageProject(pm, 12), false);
+});
+
+test("dashboard labels and counts reflect role scope", () => {
+  const admin = findTrainingUser("admin");
+  const pm = findTrainingUser("pm");
+  const chris = findTrainingUser("chris");
+
+  assert.ok(admin);
+  assert.ok(pm);
+  assert.ok(chris);
+  assert.equal(getDashboardData(admin).projectLabel, "All Projects");
+  assert.equal(getDashboardData(admin).projects.length, 3);
+  assert.equal(getDashboardData(pm).projectLabel, "Managed Projects");
+  assert.equal(getDashboardData(pm).projects.length, 2);
+  assert.equal(getDashboardData(chris).projectLabel, "My Projects");
+  assert.equal(getDashboardData(chris).projects.length, 2);
 });
 
 test("route policy keeps auth bare and selected training pages public", () => {

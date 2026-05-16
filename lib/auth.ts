@@ -6,19 +6,21 @@ import { seedUsers } from "./seed-data.ts";
 export const AUTH_COOKIE_NAME = "vtm_session";
 export const WEAK_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
-type DbUser = {
+export type UserRole = "admin" | "project_manager" | "team_member";
+
+export type DbUser = {
   id: number;
   username: string;
   password_hash: string;
   email: string | null;
-  role: string | null;
+  role: UserRole;
 };
 
 export type TrainingUser = {
   id: number;
   username: string;
   email: string | null;
-  role: string | null;
+  role: UserRole;
 };
 
 export function weakHashPassword(password: string) {
@@ -69,7 +71,7 @@ export async function verifyWeakSessionToken(token: string) {
   return jwtVerify(token, encodedWeakSecret());
 }
 
-export async function getCurrentTrainingUser() {
+export async function getCurrentTrainingUser(): Promise<TrainingUser | null> {
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
@@ -84,11 +86,30 @@ export async function getCurrentTrainingUser() {
       id: Number(payload.sub),
       username: String(payload.username || ""),
       email: typeof payload.email === "string" ? payload.email : null,
-      role: typeof payload.role === "string" ? payload.role : null,
+      role:
+        payload.role === "admin" || payload.role === "project_manager"
+          ? payload.role
+          : "team_member",
     };
   } catch {
     return null;
   }
+}
+
+function roleExpression() {
+  return `case
+    when u.is_superuser = 1 or exists (
+      select 1 from user_groups ug
+      join groups g on g.id = ug.group_id
+      where ug.user_id = u.id and g.name = 'admin'
+    ) then 'admin'
+    when exists (
+      select 1 from user_groups ug
+      join groups g on g.id = ug.group_id
+      where ug.user_id = u.id and g.name = 'project manager'
+    ) then 'project_manager'
+    else 'team_member'
+  end`;
 }
 
 export function findTrainingUser(username: string): DbUser | null {
@@ -98,13 +119,13 @@ export function findTrainingUser(username: string): DbUser | null {
   const user = database
     .prepare(
       `select
-        id,
-        username,
-        password_hash,
-        email,
-        case when is_superuser = 1 then 'admin' else 'team_member' end as role
-      from users
-      where username = ?
+        u.id,
+        u.username,
+        u.password_hash,
+        u.email,
+        ${roleExpression()} as role
+      from users u
+      where u.username = ?
       limit 1`,
     )
     .get(username) as DbUser | undefined;
@@ -125,6 +146,25 @@ export function findTrainingUser(username: string): DbUser | null {
     email: seedUser.email,
     role: seedUser.isSuperuser ? "admin" : seedUser.groups.includes(2) ? "project_manager" : "team_member",
   };
+}
+
+export function findTrainingUserById(id: number): TrainingUser | null {
+  initializeSchema();
+
+  const user = getDb()
+    .prepare(
+      `select
+        u.id,
+        u.username,
+        u.email,
+        ${roleExpression()} as role
+      from users u
+      where u.id = ?
+      limit 1`,
+    )
+    .get(id) as TrainingUser | undefined;
+
+  return user ?? null;
 }
 
 export function authenticateWeakUser(username: string, password: string) {

@@ -1,4 +1,6 @@
 import { getDb, initializeSchema } from "./db.ts";
+import type { Actor } from "./permissions.ts";
+import { isAdmin, isProjectManager, projectScopeWhere, taskScopeWhere } from "./permissions.ts";
 
 export type DashboardProject = {
   id: number;
@@ -18,6 +20,8 @@ export type DashboardTask = {
 
 export type DashboardData = {
   username: string;
+  projectLabel: string;
+  taskLabel: string;
   projects: DashboardProject[];
   tasks: DashboardTask[];
 };
@@ -39,10 +43,12 @@ type TaskRow = {
   completed: number;
 };
 
-export function getDashboardData(username = "chris"): DashboardData {
+export function getDashboardData(actor: Actor): DashboardData {
   initializeSchema();
 
   const database = getDb();
+  const projectScope = projectScopeWhere(actor, "p");
+  const taskScope = taskScopeWhere(actor, "t", "p");
 
   const projects = database
     .prepare(
@@ -55,17 +61,15 @@ export function getDashboardData(username = "chris"): DashboardData {
           count(t.id) as task_count,
           group_concat(distinct member.username) as members
         from projects p
-        join project_users current_assignment on current_assignment.project_id = p.id
-        join users current_user on current_user.id = current_assignment.user_id
         left join project_users all_assignments on all_assignments.project_id = p.id
         left join users member on member.id = all_assignments.user_id
         left join tasks t on t.project_id = p.id
-        where current_user.username = ?
+        where ${projectScope}
         group by p.id, p.title, p.due_date
         order by coalesce(p.due_date, '9999-12-31'), p.id
       `,
     )
-    .all(username) as ProjectRow[];
+    .all({ actorId: actor.id }) as ProjectRow[];
 
   const tasks = database
     .prepare(
@@ -78,16 +82,16 @@ export function getDashboardData(username = "chris"): DashboardData {
           t.completed
         from tasks t
         join projects p on p.id = t.project_id
-        join task_users tu on tu.task_id = t.id
-        join users u on u.id = tu.user_id
-        where u.username = ?
+        where ${taskScope}
         order by t.completed asc, coalesce(t.due_date, '9999-12-31'), t.id
       `,
     )
-    .all(username) as TaskRow[];
+    .all({ actorId: actor.id }) as TaskRow[];
 
   return {
-    username,
+    username: actor.username,
+    projectLabel: isAdmin(actor) ? "All Projects" : isProjectManager(actor) ? "Managed Projects" : "My Projects",
+    taskLabel: isAdmin(actor) ? "All Tasks" : isProjectManager(actor) ? "Project Tasks" : "My Tasks",
     projects: projects.map((project) => ({
       id: project.id,
       title: project.title,

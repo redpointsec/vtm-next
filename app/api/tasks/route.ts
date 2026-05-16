@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTasksApiData } from "@/lib/api-data";
-import { saveTask } from "@/lib/crud";
+import { getCurrentTrainingUser } from "@/lib/auth";
+import { listTasks, saveTask } from "@/lib/crud";
+import { canManageProject, canManageTask, canManageProjects } from "@/lib/permissions";
 
 function parseIds(value: FormDataEntryValue | null) {
   return String(value || "")
@@ -10,27 +11,42 @@ function parseIds(value: FormDataEntryValue | null) {
 }
 
 export async function POST(request: NextRequest) {
+  const currentUser = await getCurrentTrainingUser();
+  if (!currentUser || !canManageProjects(currentUser)) {
+    return NextResponse.redirect(new URL("/login?next=/tasks", request.url));
+  }
+
   const formData = await request.formData();
   const id = Number(formData.get("id") || 0);
+  const projectId = Number(formData.get("projectId") || 0);
+
+  if ((id > 0 && !canManageTask(currentUser, id)) || !canManageProject(currentUser, projectId)) {
+    return NextResponse.redirect(new URL("/tasks?error=forbidden", request.url));
+  }
 
   const taskId = saveTask({
     id,
-    projectId: Number(formData.get("projectId") || 0),
+    projectId,
     title: String(formData.get("title") || ""),
     text: String(formData.get("text") || ""),
     status: String(formData.get("status") || "open"),
     completed: Number(formData.get("completed") || 0),
     priority: Number(formData.get("priority") || 1),
     dueDate: String(formData.get("dueDate") || ""),
-    createdBy: 2,
+    createdBy: currentUser.id,
     userIds: parseIds(formData.get("userIds")),
   });
 
   return NextResponse.redirect(new URL(`/tasks?edit=${taskId}&saved=1`, request.url));
 }
 
-export function GET(request: NextRequest) {
+export async function GET() {
+  const currentUser = await getCurrentTrainingUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   return NextResponse.json({
-    results: getTasksApiData(request.nextUrl.searchParams.get("projectId")),
+    results: listTasks(currentUser),
   });
 }

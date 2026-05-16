@@ -1,12 +1,22 @@
 import Link from "next/link";
+import { getCurrentTrainingUser } from "@/lib/auth";
+import { findTrainingUser } from "@/lib/auth";
+import { canManageProjects } from "@/lib/permissions";
 import { getDashboardData } from "@/lib/queries";
 import { vulnerabilityHighlights } from "@/lib/vulnerabilities";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
-  const trainingUsername = process.env.VTM_NEXT_TRAINING_USER || "chris";
-  const { username, projects, tasks } = getDashboardData(trainingUsername);
+export default async function DashboardPage() {
+  const currentUser = await getCurrentTrainingUser();
+  const fallbackUser = findTrainingUser(process.env.VTM_NEXT_TRAINING_USER || "chris");
+  const actor = currentUser || fallbackUser;
+
+  if (!actor) {
+    return null;
+  }
+
+  const { username, projectLabel, taskLabel, projects, tasks } = getDashboardData(actor);
 
   return (
     <>
@@ -15,14 +25,16 @@ export default function DashboardPage() {
           <h1>Dashboard</h1>
           <p>Operational view for {username}&apos;s intentionally vulnerable task workflows.</p>
         </div>
-        <Link className="button" href="/projects">
-          New project
-        </Link>
+        {canManageProjects(actor) ? (
+          <Link className="button" href="/projects">
+            New project
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid two">
         <section className="card">
-          <div className="card-header">Assigned Projects</div>
+          <div className="card-header">{projectLabel}</div>
           <div className="card-body">
             <table className="table">
               <thead>
@@ -58,7 +70,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="card">
-          <div className="card-header">My Tasks</div>
+          <div className="card-header">{taskLabel}</div>
           <div className="card-body">
             <table className="table">
               <thead>

@@ -1,4 +1,7 @@
+import { redirect } from "next/navigation";
+import { getCurrentTrainingUser } from "@/lib/auth";
 import { listProjects, listUsers } from "@/lib/crud";
+import { canManageProjects, canManageProject, isAdmin, isProjectManager } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,20 +15,33 @@ type ProjectsPageProps = {
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
   const params = await searchParams;
-  const projects = listProjects();
+  const currentUser = await getCurrentTrainingUser();
+
+  if (!currentUser) {
+    redirect("/login?next=/projects");
+  }
+
+  const projects = listProjects(currentUser);
   const users = listUsers();
   const editing = projects.find((project) => project.id === Number(params?.edit));
+  const canManage = canManageProjects(currentUser);
+  const title = canManage ? "Projects" : "My Projects";
 
   return (
     <>
       <div className="page-header">
         <div>
-          <h1>Projects</h1>
-          <p>Create, edit, assign, and inspect project records.</p>
+          <h1>{title}</h1>
+          <p>
+            {canManage
+              ? "Create, edit, assign, and inspect project records."
+              : "Review project records assigned to you."}
+          </p>
         </div>
       </div>
 
       <div className="grid two">
+        {canManage ? (
         <section className="card">
           <div className="card-header">{editing ? `Edit Project #${editing.id}` : "New Project"}</div>
           <div className="card-body">
@@ -51,13 +67,20 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
               </div>
               <div className="field">
                 <label htmlFor="createdBy">Owner</label>
-                <select id="createdBy" name="createdBy" defaultValue={editing?.created_by || 3}>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.username}
-                    </option>
-                  ))}
-                </select>
+                {isAdmin(currentUser) ? (
+                  <select id="createdBy" name="createdBy" defaultValue={editing?.created_by || currentUser.id}>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.username}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <>
+                    <input id="createdBy" name="createdBy" type="hidden" value={editing?.created_by || currentUser.id} />
+                    <input value={currentUser.username} disabled />
+                  </>
+                )}
               </div>
               <div className="field">
                 <label htmlFor="userIds">Assigned user IDs</label>
@@ -66,11 +89,10 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                   name="userIds"
                   defaultValue={
                     editing
-                      ? users
-                          .filter((user) => editing.members?.split(",").includes(user.username))
-                          .map((user) => user.id)
-                          .join(",")
-                      : "1,2,3"
+                      ? editing.user_ids || ""
+                      : isProjectManager(currentUser)
+                        ? String(currentUser.id)
+                        : "1,2,3"
                   }
                 />
               </div>
@@ -82,6 +104,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
             </form>
           </div>
         </section>
+        ) : null}
 
         <section className="card">
           <div className="card-header">Projects</div>
@@ -101,21 +124,29 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                   <tr key={project.id}>
                     <td>{project.id}</td>
                     <td>{project.title}</td>
-                    <td>{project.members || "none"}</td>
-                    <td>{project.task_count}</td>
-                    <td className="row-actions">
-                      <a className="button secondary compact" href={`/projects?edit=${project.id}`}>
-                        Edit
-                      </a>
-                      <form action="/api/projects/delete" method="post">
-                        <input name="id" type="hidden" value={project.id} />
-                        <button className="button secondary compact" type="submit">
-                          Delete
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                ))}
+                  <td>{project.members || "none"}</td>
+                  <td>{project.task_count}</td>
+                  <td className="row-actions">
+                    {canManageProject(currentUser, project.id) ? (
+                      <>
+                        <a className="button secondary compact" href={`/projects?edit=${project.id}`}>
+                          Edit
+                        </a>
+                        {isAdmin(currentUser) ? (
+                          <form action="/api/projects/delete" method="post">
+                            <input name="id" type="hidden" value={project.id} />
+                            <button className="button secondary compact" type="submit">
+                              Delete
+                            </button>
+                          </form>
+                        ) : null}
+                      </>
+                    ) : (
+                      <span className="badge">Read only</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
               </tbody>
             </table>
           </div>

@@ -1,4 +1,6 @@
 import { getDb, initializeSchema } from "./db.ts";
+import type { Actor } from "./permissions.ts";
+import { projectScopeWhere, taskScopeWhere } from "./permissions.ts";
 
 export type UserOption = {
   id: number;
@@ -13,6 +15,7 @@ export type ProjectRecord = {
   due_date: string | null;
   created_by: number | null;
   members: string | null;
+  user_ids: string | null;
   task_count: number;
 };
 
@@ -27,6 +30,7 @@ export type TaskRecord = {
   priority: number | null;
   due_date: string | null;
   assignees: string | null;
+  user_ids: string | null;
 };
 
 export type NoteRecord = {
@@ -68,8 +72,9 @@ export function listUsers() {
     .all() as UserOption[];
 }
 
-export function listProjects() {
+export function listProjects(actor?: Actor) {
   initializeSchema();
+  const whereClause = actor ? `where ${projectScopeWhere(actor, "p")}` : "";
   return getDb()
     .prepare(
       `
@@ -81,20 +86,23 @@ export function listProjects() {
           p.due_date,
           p.created_by,
           group_concat(distinct u.username) as members,
+          group_concat(distinct u.id) as user_ids,
           count(distinct t.id) as task_count
         from projects p
         left join project_users pu on pu.project_id = p.id
         left join users u on u.id = pu.user_id
         left join tasks t on t.project_id = p.id
+        ${whereClause}
         group by p.id
         order by p.id desc
       `,
     )
-    .all() as ProjectRecord[];
+    .all(actor ? { actorId: actor.id } : {}) as ProjectRecord[];
 }
 
-export function listTasks() {
+export function listTasks(actor?: Actor) {
   initializeSchema();
+  const whereClause = actor ? `where ${taskScopeWhere(actor, "t", "p")}` : "";
   return getDb()
     .prepare(
       `
@@ -108,20 +116,23 @@ export function listTasks() {
           t.completed,
           t.priority,
           t.due_date,
-          group_concat(distinct u.username) as assignees
+          group_concat(distinct u.username) as assignees,
+          group_concat(distinct u.id) as user_ids
         from tasks t
         left join projects p on p.id = t.project_id
         left join task_users tu on tu.task_id = t.id
         left join users u on u.id = tu.user_id
+        ${whereClause}
         group by t.id
         order by t.id desc
       `,
     )
-    .all() as TaskRecord[];
+    .all(actor ? { actorId: actor.id } : {}) as TaskRecord[];
 }
 
-export function listNotes(taskId?: number) {
+export function listNotes(taskId?: number, actor?: Actor) {
   initializeSchema();
+  const taskScope = actor ? taskScopeWhere(actor, "t", "p") : "1 = 1";
   const sql = `
     select
       n.id,
@@ -135,20 +146,38 @@ export function listNotes(taskId?: number) {
       n.created_at
     from notes n
     left join tasks t on t.id = n.task_id
+    left join projects p on p.id = t.project_id
     left join users u on u.id = n.user_id
-    ${taskId ? `where n.task_id = ${taskId}` : ""}
+    where ${taskScope}
+    ${taskId ? `and n.task_id = ${taskId}` : ""}
     order by n.id desc
   `;
 
   // Intentional vulnerability: taskId is interpolated to keep an unsafe query surface.
-  return getDb().prepare(sql).all() as NoteRecord[];
+  return getDb().prepare(sql).all(actor ? { actorId: actor.id } : {}) as NoteRecord[];
 }
 
-export function listFiles() {
+export function listFiles(actor?: Actor) {
   initializeSchema();
+  if (!actor) {
+    return getDb()
+      .prepare("select * from files order by id desc")
+      .all() as FileRecord[];
+  }
+
   return getDb()
-    .prepare("select * from files order by id desc")
-    .all() as FileRecord[];
+    .prepare(
+      `
+        select distinct f.*
+        from files f
+        left join projects p on p.id = f.project_id
+        left join tasks t on t.id = f.task_id
+        where ${projectScopeWhere(actor, "p")}
+          or ${taskScopeWhere(actor, "t", "p")}
+        order by f.id desc
+      `,
+    )
+    .all({ actorId: actor.id }) as FileRecord[];
 }
 
 function replaceAssignments(table: "project_users" | "task_users", idColumn: "project_id" | "task_id", id: number, userIds: number[]) {
