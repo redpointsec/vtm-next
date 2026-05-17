@@ -3,9 +3,10 @@ import { getCurrentTrainingUser } from "@/lib/auth";
 import { listProjects, saveProject } from "@/lib/crud";
 import { canManageProject, canManageProjects, isAdmin } from "@/lib/permissions";
 
-function parseIds(value: FormDataEntryValue | null) {
-  return String(value || "")
-    .split(",")
+function parseIds(formData: FormData, field: string) {
+  return formData
+    .getAll(field)
+    .flatMap((value) => String(value).split(","))
     .map((id) => Number(id.trim()))
     .filter((id) => Number.isFinite(id) && id > 0);
 }
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     priority: Number(formData.get("priority") || 1),
     dueDate: String(formData.get("dueDate") || ""),
     createdBy: isAdmin(currentUser) ? Number(formData.get("createdBy") || currentUser.id) : currentUser.id,
-    userIds: parseIds(formData.get("userIds")),
+    userIds: parseIds(formData, "userIds"),
   });
 
   return NextResponse.redirect(new URL(`/projects?edit=${projectId}&saved=1`, request.url));

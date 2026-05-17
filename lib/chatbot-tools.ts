@@ -231,6 +231,12 @@ export function createChatSession(userId: number, title: string) {
     )
     .run(id, userId, title);
 
+  appendChatMessage({
+    sessionId: id,
+    role: "assistant",
+    content: "Ask me how I can help.",
+  });
+
   return id;
 }
 

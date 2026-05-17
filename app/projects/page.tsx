@@ -49,12 +49,34 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
               <input name="id" type="hidden" defaultValue={editing?.id || ""} />
               <div className="field">
                 <label htmlFor="title">Title</label>
-                <input id="title" name="title" defaultValue={editing?.title || "New Campaign"} />
+                <input
+                  id="title"
+                  name="title"
+                  defaultValue={editing?.title || ""}
+                  placeholder="Project title"
+                />
               </div>
               <div className="field">
                 <label htmlFor="text">Description</label>
-                <textarea id="text" name="text" defaultValue={editing?.text || "Draft project details"} />
+                <textarea
+                  id="text"
+                  name="text"
+                  defaultValue={editing?.text || ""}
+                  placeholder="Project description"
+                />
               </div>
+              {!editing ? (
+                <div className="suggestions">
+                  <span className="suggestions-label">Suggestions</span>
+                  <ul className="tag-list">
+                    <li><span className="badge">Marketing Campaign</span></li>
+                    <li><span className="badge">Mobile App Launch</span></li>
+                    <li><span className="badge">Quarterly Audit</span></li>
+                    <li><span className="badge">Customer Survey</span></li>
+                    <li><span className="badge">Internal Tooling</span></li>
+                  </ul>
+                </div>
+              ) : null}
               <div className="grid two">
                 <div className="field">
                   <label htmlFor="dueDate">Due date</label>
@@ -83,18 +105,29 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
                 )}
               </div>
               <div className="field">
-                <label htmlFor="userIds">Assigned user IDs</label>
-                <input
+                <label htmlFor="userIds">Assigned to</label>
+                <select
                   id="userIds"
                   name="userIds"
+                  multiple
                   defaultValue={
                     editing
-                      ? editing.user_ids || ""
+                      ? (editing.user_ids || "")
+                          .split(",")
+                          .map((value) => value.trim())
+                          .filter(Boolean)
                       : isProjectManager(currentUser)
-                        ? String(currentUser.id)
-                        : "1,2,3"
+                        ? [String(currentUser.id)]
+                        : users.map((user) => String(user.id))
                   }
-                />
+                >
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.username}
+                    </option>
+                  ))}
+                </select>
+                <p className="field-hint">Hold Cmd (macOS) or Ctrl to select multiple.</p>
               </div>
               {params?.saved ? <p className="form-success">Project saved.</p> : null}
               {params?.deleted ? <p className="form-success">Project deleted.</p> : null}

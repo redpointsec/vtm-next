@@ -9,8 +9,12 @@ import {
 import { runLlmAssistant } from "@/lib/llm-chat";
 
 export async function POST(request: NextRequest) {
+  const wantsJson = (request.headers.get("accept") || "").includes("application/json");
   const currentUser = await getCurrentTrainingUser();
   if (!currentUser) {
+    if (wantsJson) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/login?next=/chat", request.url));
   }
 
@@ -41,6 +45,14 @@ export async function POST(request: NextRequest) {
     content: assistantResponse.content,
     toolName: assistantResponse.toolName,
   });
+
+  if (wantsJson) {
+    return NextResponse.json({
+      sessionId,
+      content: assistantResponse.content,
+      toolName: assistantResponse.toolName,
+    });
+  }
 
   return NextResponse.redirect(new URL(`/chat?session=${sessionId}&sent=1`, request.url));
 }

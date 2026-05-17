@@ -15,7 +15,9 @@ export async function POST(request: NextRequest) {
   fs.mkdirSync(uploadDir, { recursive: true });
 
   // Intentional vulnerability: trusts attacker-controlled filename and content type.
-  const target = path.join(uploadDir, file.name);
+  const suppliedName = String(formData.get("name") || "").trim();
+  const storedName = suppliedName || file.name;
+  const target = path.join(uploadDir, storedName);
   const bytes = Buffer.from(await file.arrayBuffer());
   fs.writeFileSync(target, bytes);
 
@@ -23,8 +25,8 @@ export async function POST(request: NextRequest) {
     uploadedBy: Number(formData.get("uploadedBy") || 2),
     projectId: Number(formData.get("projectId") || 0),
     taskId: Number(formData.get("taskId") || 0),
-    name: file.name,
-    path: `/uploads/${file.name}`,
+    name: storedName,
+    path: `/uploads/${storedName}`,
     sourceUrl: "",
     contentType: file.type,
     size: file.size,

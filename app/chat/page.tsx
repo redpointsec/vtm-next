@@ -3,6 +3,7 @@ import {
   getChatMessages,
   listChatSessions,
 } from "@/lib/chatbot-tools";
+import { ChatPanel } from "./chat-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -54,55 +55,8 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           </div>
         </section>
 
-        <section className="card">
-          <div className="card-header">Conversation</div>
-          <div className="card-body chat-panel">
-            <div className="message-list">
-              {messages.length === 0 ? (
-                <p className="empty-chat">Ask for an overview, users, search database, or add a project/task/note.</p>
-              ) : (
-                messages.map((message) => (
-                  <article className={`chat-message ${message.role}`} key={message.id}>
-                    <div className="message-meta">
-                      <strong>{message.role}</strong>
-                      {message.tool_name ? <span>{message.tool_name}</span> : null}
-                    </div>
-                    <pre>{message.content}</pre>
-                  </article>
-                ))
-              )}
-            </div>
-
-            <form className="form-grid chat-form" action="/api/chat" method="post">
-              <input name="sessionId" type="hidden" value={selectedSessionId} />
-              <div className="field">
-                <label htmlFor="message">Message</label>
-                <textarea
-                  id="message"
-                  name="message"
-                  defaultValue='{"tool":"search_database","args":{"query":"reset-token"}}'
-                />
-              </div>
-              {params?.sent ? <p className="form-success">Assistant tool executed.</p> : null}
-              <button className="button" type="submit">
-                Send
-              </button>
-            </form>
-          </div>
-        </section>
+        <ChatPanel sessionId={selectedSessionId} initialMessages={messages} />
       </div>
-
-      <section className="card page-section">
-        <div className="card-header">Tool Examples</div>
-        <div className="card-body">
-          <div className="tool-examples">
-            <code>{'{"tool":"get_users","args":{}}'}</code>
-            <code>{'{"tool":"add_project","args":{"title":"Assistant Launch","userIds":[2,3]}}'}</code>
-            <code>{'{"tool":"update_task","args":{"id":101,"title":"Updated by assistant","projectId":7}}'}</code>
-            <code>{'{"tool":"add_note","args":{"taskId":101,"title":"Assistant note","text":"Stored note"}}'}</code>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

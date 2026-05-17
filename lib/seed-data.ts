@@ -218,7 +218,7 @@ export const seedFiles = [
     taskId: 102,
     name: "remote-vacuum.png",
     path: "/media/uploads/remote-vacuum.png",
-    sourceUrl: "http://169.254.169.254/latest/meta-data/",
+    sourceUrl: "https://example.com/assets/vacuum.png",
     contentType: "image/png",
     size: 4096,
   },
@@ -235,39 +235,12 @@ export const seedFiles = [
   },
 ];
 
-export const seedChatSessions = [
-  {
-    id: 801,
-    userId: 2,
-    title: "Task overview",
-  },
-  {
-    id: 802,
-    userId: 1,
-    title: "Admin database search",
-  },
-];
+export const seedChatSessions: Array<{ id: number; userId: number; title: string }> = [];
 
-export const seedChatMessages = [
-  {
-    id: 9001,
-    sessionId: 801,
-    role: "user",
-    content: "What tasks are assigned to me?",
-    toolName: "",
-  },
-  {
-    id: 9002,
-    sessionId: 801,
-    role: "assistant",
-    content: "You have launch copy and API work assigned in the seed database.",
-    toolName: "search_database",
-  },
-  {
-    id: 9003,
-    sessionId: 802,
-    role: "user",
-    content: "List users and profile details.",
-    toolName: "",
-  },
-];
+export const seedChatMessages: Array<{
+  id: number;
+  sessionId: number;
+  role: "user" | "assistant" | "tool";
+  content: string;
+  toolName: string;
+}> = [];

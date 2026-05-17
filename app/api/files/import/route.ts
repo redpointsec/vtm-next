@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
   const response = await fetch(sourceUrl);
   const bytes = Buffer.from(await response.arrayBuffer());
   const parsed = new URL(sourceUrl);
-  const name = path.basename(parsed.pathname) || "remote-import";
+  const suppliedName = String(formData.get("name") || "").trim();
+  const name = suppliedName || path.basename(parsed.pathname) || "remote-import";
   const target = path.join(uploadDir, name);
   fs.writeFileSync(target, bytes);
 
