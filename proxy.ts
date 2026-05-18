@@ -15,9 +15,11 @@ export function proxy(request: NextRequest) {
     });
   }
 
-  const loginUrl = new URL("/login", request.url);
+  const host = request.headers.get("host") ?? request.nextUrl.host;
+  const proto =
+    request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "") ?? "http";
+  const loginUrl = new URL(`${proto}://${host}/login`);
   loginUrl.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
-
   return NextResponse.redirect(loginUrl);
 }
 

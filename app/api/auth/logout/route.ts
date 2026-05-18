@@ -7,7 +7,10 @@ function logout(request: NextRequest) {
     request.nextUrl.searchParams.get("next") ||
     "/login";
 
-  const response = NextResponse.redirect(weakRedirectUrl(target, request.url, "/login"));
+  const location = weakRedirectUrl(target, "/login");
+  const response = location.startsWith("/")
+    ? new NextResponse(null, { status: 303, headers: { Location: location } })
+    : NextResponse.redirect(location);
 
   response.cookies.set(AUTH_COOKIE_NAME, "", {
     // Intentional vulnerability preserved: cookie remains readable/non-secure even when cleared.

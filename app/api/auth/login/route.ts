@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const response = NextResponse.redirect(weakRedirectUrl(next, request.url, "/dashboard"));
+  const location = weakRedirectUrl(next, "/dashboard");
+  const response = location.startsWith("/")
+    ? new NextResponse(null, { status: 303, headers: { Location: location } })
+    : NextResponse.redirect(location);
   const token = await createWeakSessionToken(user);
 
   response.cookies.set(AUTH_COOKIE_NAME, token, {

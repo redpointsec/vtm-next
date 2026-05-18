@@ -182,14 +182,17 @@ export function authenticateWeakUser(username: string, password: string) {
   };
 }
 
-export function weakRedirectUrl(target: string | null, requestUrl: string, fallback: string) {
+export function weakRedirectUrl(target: string | null, fallback: string): string {
   const destination = target || fallback;
 
   try {
     // Intentional vulnerability: absolute external URLs are accepted unchanged.
-    return new URL(destination);
+    return new URL(destination).toString();
   } catch {
-    return new URL(destination, requestUrl);
+    // Relative path: callers emit it as a raw Location header so the browser
+    // resolves it against the origin it's already on (avoids leaking the
+    // server-side hostname like 'localhost' when bound to multiple interfaces).
+    return destination.startsWith("/") ? destination : `/${destination}`;
   }
 }
 

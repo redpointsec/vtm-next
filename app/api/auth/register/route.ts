@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.redirect(new URL("/register?error=1", request.url));
     }
 
-    const response = NextResponse.redirect(weakRedirectUrl(next, request.url, `/profile/${user.id}`));
+    const location = weakRedirectUrl(next, `/profile/${user.id}`);
+    const response = location.startsWith("/")
+      ? new NextResponse(null, { status: 303, headers: { Location: location } })
+      : NextResponse.redirect(location);
     const token = await createWeakSessionToken(user);
 
     response.cookies.set(AUTH_COOKIE_NAME, token, {
