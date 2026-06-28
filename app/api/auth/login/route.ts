@@ -20,12 +20,18 @@ export async function POST(request: NextRequest) {
     // Intentional vulnerability: failed logins expose submitted credentials in logs.
     console.warn(`VTM weak auth failed username=${username} password=${password}`);
 
-    const loginUrl = new URL("/login", request.url);
+    // Emit a relative Location (303) so the browser resolves it against the origin
+    // it's already on. NextResponse.redirect() would bake request.url's server-side
+    // host into an absolute URL, sending deployed instances back to localhost.
+    const params = new URLSearchParams();
     if (next) {
-      loginUrl.searchParams.set("next", next);
+      params.set("next", next);
     }
-    loginUrl.searchParams.set("error", user ? "invalid_password" : "username_not_found");
-    return NextResponse.redirect(loginUrl);
+    params.set("error", user ? "invalid_password" : "username_not_found");
+    return new NextResponse(null, {
+      status: 303,
+      headers: { Location: `/login?${params.toString()}` },
+    });
   }
 
   const location = weakRedirectUrl(next, "/dashboard");
