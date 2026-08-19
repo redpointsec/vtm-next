@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getCurrentTrainingUser } from "@/lib/auth";
 import { canManageProjects, canViewAdminTools } from "@/lib/permissions";
 import { isAuthRoute, isPublicRoute } from "@/lib/route-policy";
+import SurveyorShim from "./surveyor-shim";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -60,6 +61,7 @@ export default async function RootLayout({
       <html lang="en">
         <body>
           <main className="auth-shell">{children}</main>
+          <SurveyorShim />
         </body>
       </html>
     );
@@ -106,6 +108,7 @@ export default async function RootLayout({
             <section className="content">{children}</section>
           </main>
         </div>
+        <SurveyorShim />
       </body>
     </html>
   );
